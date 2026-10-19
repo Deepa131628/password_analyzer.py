@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CrackSense – Password Strength Analyzer</title>
+<style>
+:root{--bg:#0a0a0a;--bg2:#141414;--card:#161616;--card2:#1f1f1f;--tx:#f6f1e3;--mu:#a09886;--bd:#2e2a20;--ac:#d4af37;--ac2:#f5d77a;--onac:#111111;--bad:#f87171;--ok:#86efac;--glow:rgba(212,175,55,.16);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0a0a;--bg2:#141414;--card:#161616;--card2:#1f1f1f;--tx:#f6f1e3;--mu:#a09886;--bd:#2e2a20;--ac:#d4af37;--ac2:#f5d77a;--onac:#111111;--bad:#f87171;--ok:#86efac;--glow:rgba(212,175,55,.16);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a0a0a;--bg2:#141414;--card:#161616;--card2:#1f1f1f;--tx:#f6f1e3;--mu:#a09886;--bd:#2e2a20;--ac:#d4af37;--ac2:#f5d77a;--onac:#111111;--bad:#f87171;--ok:#86efac;--glow:rgba(212,175,55,.16);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(900px 500px at 50% -120px,var(--glow),transparent),var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--card);border:1px solid var(--bd);border-radius:14px}
+.logo{font-weight:800;font-size:1.1rem}.logo b{color:var(--ac)}
+nav{display:flex;gap:4px;background:var(--bg2);padding:4px;border-radius:999px}
+nav button{border:0;background:none;color:var(--mu);padding:7px 16px;border-radius:999px;font:inherit;font-size:.9rem;cursor:pointer}
+nav button.on{background:var(--ac);color:var(--onac);font-weight:700}
+.hero{text-align:center;padding:26px 8px 18px}.hero h1{font-size:clamp(1.7rem,5vw,2.6rem);margin:0;line-height:1.15}
+.hero h1 span{background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mu);margin:8px 0 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px}
+h2{font-size:.75rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu);margin:0 0 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input{flex:1;min-width:0;font-size:1.05rem;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--tx);font-family:ui-monospace,Menlo,Consolas,monospace}
+input:focus{outline:2px solid var(--ac);outline-offset:0}
+button.b{font:inherit;font-size:.9rem;padding:9px 13px;border-radius:10px;border:1px solid var(--bd);background:var(--card2);color:var(--tx);cursor:pointer}
+button.b:hover{border-color:var(--ac)}button.p{background:var(--ac);color:var(--onac);border-color:var(--ac);font-weight:700}
+.segs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:14px 0 8px}.segs i{height:7px;border-radius:4px;background:var(--bd);transition:background .2s}
+.lvl{font-weight:800;font-size:1.25rem}.mu{color:var(--mu)}.sm{font-size:.85rem}
+#xray{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.35rem;overflow-wrap:anywhere;min-height:2rem}
+.w{color:var(--bad);text-decoration:underline wavy;font-weight:700}.g{color:var(--ok)}
+.chk{display:flex;gap:10px;align-items:center;padding:8px 10px;margin-bottom:6px;background:var(--card2);border-radius:10px;font-size:.92rem}
+.chk .d{width:20px;height:20px;border-radius:50%;border:2px solid var(--bd);flex:none;display:grid;place-items:center;font-size:.7rem;color:transparent}
+.chk.y .d{background:var(--ok);border-color:var(--ok);color:var(--onac)}.chk small{display:block;color:var(--mu);font-size:.75rem}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.st{background:var(--card2);border-radius:10px;padding:10px;text-align:center}.st b{display:block;font-size:1.3rem}.st small{color:var(--mu);font-size:.7rem;letter-spacing:.07em}
+.br{display:grid;grid-template-columns:80px 1fr 28px;gap:8px;align-items:center;font-size:.85rem;margin:4px 0}
+.br div{height:6px;background:var(--bd);border-radius:4px;overflow:hidden}.br i{display:block;height:100%;background:var(--ac);width:0;transition:width .2s}
+table{width:100%;border-collapse:collapse;font-size:.92rem}td{padding:7px 0;border-bottom:1px solid var(--bd)}td:last-child{text-align:right;font-weight:700}
+#msg{font-weight:600;margin-top:10px;min-height:1.5rem}
+.alt{display:flex;gap:8px;align-items:center;margin:4px 0 10px}.alt code{flex:1;overflow-wrap:anywhere;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:8px}
+.hrow{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:.9rem;flex-wrap:wrap}.hrow code{color:var(--ac)}
+.about h3{margin:16px 0 4px;color:var(--ac);font-size:1rem}.about p{margin:0;color:var(--mu)}
+.view{display:none}.view.on{display:block}
+footer{text-align:center;color:var(--mu);font-size:.8rem;padding:18px 0 30px}
+</style></head><body><div class="wrap">
+<header><div class="logo">🔍 Crack<b>Sense</b></div>
+<nav><button class="on" data-v="an">Analyzer</button><button data-v="hi">History</button><button data-v="ab">About</button></nav></header>
+
+<section id="an" class="view on">
+<div class="hero"><h1>Password <span>Strength Analyzer</span></h1><p>See exactly which parts of your password an attacker would guess first.</p></div>
+<div class="grid">
+ <div class="card"><h2>Enter password</h2>
+  <div class="row"><input id="pw" type="password" placeholder="Type your password here…" autocomplete="off" spellcheck="false"><button class="b" id="tg">Show</button></div>
+  <div class="row" style="margin-top:10px"><button class="b p" id="gen">✨ Generate strong</button><button class="b" id="cp">Copy</button><button class="b" id="save">💾 Save</button></div>
+  <div class="segs"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="lvl" id="lvl">Enter a password to begin</div><div class="mu sm" id="stats"></div>
+  <h2 style="margin-top:16px">X-ray view (red = predictable)</h2><div id="xray" class="mu">—</div>
+ </div>
+ <div class="card"><h2>Security checklist</h2><div id="list"></div></div>
+</div>
+<div class="grid">
+ <div class="card"><h2>Detailed analysis</h2>
+  <div class="stats"><div class="st"><b id="sLen">–</b><small>CHARACTERS</small></div><div class="st"><b id="sEnt">–</b><small>ENTROPY (BITS)</small></div><div class="st"><b id="sPool">–</b><small>CHARSET SIZE</small></div><div class="st"><b id="sUni">–</b><small>UNIQUE CHARS</small></div></div>
+  <div id="bars"></div>
+  <h2 style="margin-top:14px">Time to crack</h2><table id="crack"><tr><td class="mu">—</td><td></td></tr></table>
+ </div>
+ <div class="card"><h2>Attack simulator</h2>
+  <p class="mu sm" style="margin-top:0">Runs a real dictionary attack: common words plus capitals, leetspeak, digits and years.</p>
+  <button class="b p" id="atk">⚔ Simulate attack</button><div id="msg" class="mu"></div>
+  <h2 style="margin-top:16px">Stronger alternatives</h2><div id="alts" class="mu sm">Enter a password to get suggestions.</div>
+ </div>
+</div></section>
+
+<section id="hi" class="view"><div class="hero"><h1><span>History</span></h1><p>Saved passwords are stored only as salted PBKDF2 hashes in this browser.</p></div>
+<div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div id="hc" class="mu"></div><button class="b" id="clr">Clear history</button></div><div id="hlist"></div></div></section>
+
+<section id="ab" class="view"><div class="hero"><h1>About <span>CrackSense</span></h1></div>
+<div class="card about">
+<h3>Entropy</h3><p>A measure of unpredictability in bits: characters × log₂(pool size). Every extra bit doubles the guesses. CrackSense counts predictable characters as almost zero, because attackers try them first.</p>
+<h3>Brute force vs dictionary attack</h3><p>Brute force tries every combination, so length wins. A dictionary attack tries real words with common tweaks, so “P@ssw0rd2024” falls almost instantly even though it looks complex.</p>
+<h3>X-ray view</h3><p>Highlights common words, sequences (abcd, 4321), keyboard walks (qwerty), repeats and years in red so you can see what to change.</p>
+<h3>Hashing and salting</h3><p>History never stores your password. A random 16-byte salt is added, then PBKDF2-HMAC-SHA256 runs 100,000 times. Hashing is one-way, salt defeats rainbow tables, and the iterations make each guess slow.</p>
+<h3>Privacy</h3><p>Everything runs locally in your browser. Nothing is sent to a server.</p></div></section>
+<footer>CrackSense · Password Strength Analyzer</footer>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const COMMON=["password","123456","12345678","qwerty","abc123","letmein","admin","welcome","iloveyou","monkey","dragon","football","login","princess","sunshine","master","hello","freedom","whatever","trustno1","passw0rd","111111","123123","000000","qwertyuiop","password1","admin123","india","chennai","cricket","superman","batman","shadow","michael","computer","college","student","vijay","dhoni"];
+const WORDS=["maple","orbit","tiger","cobalt","river","lantern","pixel","falcon","mango","harbor","quartz","velvet","comet","bamboo","anchor","ember","glacier","jasmine","nimbus","saffron","thunder","violet","walnut","zephyr","cipher","meadow","rocket","coral","prism","summit"];
+const KB=["qwertyuiop","qwerty","asdfgh","asdf","zxcvbn","zxcv","qaz","wsx","1qaz","2wsx","poiuy","hjkl"];
+const SYM="!@#$%^&*-_+=?";
+const LEET={"@":"a","4":"a","3":"e","1":"i","!":"i","|":"i","0":"o","$":"s","5":"s","7":"t"};
+const TOLEET={a:"@",e:"3",o:"0",s:"$",i:"!"};
+const rnd=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n};
+const pick=s=>s[rnd(s.length)];
+const cap=w=>w.charAt(0).toUpperCase()+w.slice(1);
+const norm=p=>[...p.toLowerCase()].map(c=>LEET[c]||c).join("");
+
+function weakSpans(p){
+  const sp=[],low=p.toLowerCase(),n=norm(p);
+  COMMON.filter(w=>w.length>=4).forEach(w=>{let i=n.indexOf(w);while(i>=0){sp.push([i,i+w.length,"common"]);i=n.indexOf(w,i+1)}});
+  for(const m of p.matchAll(/(.)\1{2,}/g))sp.push([m.index,m.index+m[0].length,"repeat"]);
+  for(let i=0;i<low.length-3;){const st=low.charCodeAt(i+1)-low.charCodeAt(i);let j=i+1;
+    if(st===1||st===-1){while(j<low.length&&low.charCodeAt(j)-low.charCodeAt(j-1)===st)j++;if(j-i>=4){sp.push([i,j,"seq"]);i=j;continue}}i++}
+  KB.forEach(k=>{let i=low.indexOf(k);while(i>=0){sp.push([i,i+k.length,"kb"]);i=low.indexOf(k,i+1)}});
+  for(const m of p.matchAll(/(19|20)\d\d/g))sp.push([m.index,m.index+4,"year"]);
+  return sp}
+function analyze(p){
+  const r={len:p.length,lo:/[a-z]/.test(p),up:/[A-Z]/.test(p),dg:/\d/.test(p),sy:/[^A-Za-z0-9]/.test(p)};
+  r.types=[r.lo,r.up,r.dg,r.sy].filter(Boolean).length;
+  r.pool=26*r.lo+26*r.up+10*r.dg+33*r.sy;
+  const sp=weakSpans(p),weak=new Set();sp.forEach(([s,e])=>{for(let i=s;i<e;i++)weak.add(i)});
+  r.weak=weak;r.kinds=new Set(sp.map(x=>x[2]));
+  let ent=r.pool?(p.length-weak.size)*Math.log2(r.pool)+weak.size*1.5:0;
+  if(COMMON.includes(norm(p)))ent=Math.min(ent,5);
+  r.ent=ent;r.level=ent<28?0:ent<36?1:ent<60?2:ent<80?3:4;
+  const g=Math.pow(2,ent)/2;
+  r.crack=[["Online (100 guesses/sec)",g/1e2],["Offline PC (10 billion/sec)",g/1e10],["GPU cluster (1 trillion/sec)",g/1e12]];
+  r.n={up:(p.match(/[A-Z]/g)||[]).length,lo:(p.match(/[a-z]/g)||[]).length,dg:(p.match(/\d/g)||[]).length,sy:(p.match(/[^A-Za-z0-9]/g)||[]).length};
+  return r}
+function fmt(s){if(s<1)return"instantly";if(s>31557600*1e9)return"billions of years+";
+  for(const[n,v]of[["year",31557600],["day",86400],["hour",3600],["minute",60],["second",1]])if(s>=v){const x=Math.floor(s/v);return x.toLocaleString()+" "+n+(x>1?"s":"")}return"instantly"}
+function dictAttack(t){
+  const suf=["","!","@123","123","1234","@","#","."];for(let i=0;i<1000;i++)suf.push(String(i));for(let y=1950;y<=2030;y++)suf.push(String(y));
+  let at=0;
+  for(const w of COMMON){
+    const full=[...w].map(c=>TOLEET[c]||c).join(""),light=[...w].map(c=>({a:"@",o:"0",e:"3"}[c]||c)).join("");
+    for(const b of new Set([w,cap(w),w.toUpperCase(),full,cap(full),light,cap(light)]))for(const s of suf){at++;if(b+s===t)return[at,b+s]}}
+  return null}
+
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+const unhex=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
+async function kdf(pw,salt){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveBits"]);
+  return hex(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt,iterations:100000},k,256))}
+const getH=()=>{try{return JSON.parse(localStorage.getItem("vl_hist")||"[]")}catch(e){return[]}};
+const setH=h=>{try{localStorage.setItem("vl_hist",JSON.stringify(h))}catch(e){}};
+async function used(pw){for(const e of getH()){if(await kdf(pw,unhex(e.s))===e.h)return true}return false}
+
+function suggest(pw){
+  const w0=analyze(pw).weak;
+  const keep=[...pw].filter((c,i)=>!w0.has(i)&&/[a-z]/i.test(c)).slice(0,5).join("").toLowerCase()||pick(WORDS);
+  const k=cap([...keep].map(c=>rnd(2)&&TOLEET[c]?TOLEET[c]:c).join(""));
+  const all="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"+SYM;
+  const mk=[["Your password, upgraded",()=>k+pick(SYM)+cap(pick(WORDS))+(rnd(90)+10)+pick(SYM)],
+    ["Easy-to-remember passphrase",()=>[0,1,2,3].map(()=>cap(pick(WORDS))).join("-")+(rnd(90)+10)+pick(SYM)],
+    ["Fully random (16 chars)",()=>Array.from({length:16},()=>pick(all)).join("")]];
+  return mk.map(([t,f])=>{let c;for(let i=0;i<20;i++){c=f();if(analyze(c).level>=3)break}return[t,c]})}
+function renderAlts(pw){const box=$("alts");box.className="";box.innerHTML="";
+  suggest(pw).forEach(([t,v])=>{const d=document.createElement("div");const l=document.createElement("div");l.className="mu sm";l.textContent=t;
+    const r=document.createElement("div");r.className="alt";const c=document.createElement("code");c.textContent=v;
+    const b=document.createElement("button");b.className="b";b.textContent="Use";b.onclick=()=>{$("pw").value=v;$("pw").type="text";$("tg").textContent="Hide";update(true)};
+    r.append(c,b);d.append(l,r);box.append(d)})}
+
+const LV=[["Very weak","#ef4444"],["Weak","#f97316"],["Fair","#eab308"],["Strong","#22c55e"],["Very strong","#10b981"]];
+function say(t,c){const m=$("msg");m.textContent=t;m.style.color=c||""}
+function checklist(r,p,reused){
+  const k=r.kinds,items=[
+   ["Minimum length","At least 8 characters",r.len>=8],["Great length","14 or more characters",r.len>=14],
+   ["Uppercase letters","Contains A–Z",r.up],["Lowercase letters","Contains a–z",r.lo],["Numbers","Contains 0–9",r.dg],
+   ["Special characters","Contains !@#$%^&* etc.",r.sy],["Not a common password","Avoids known passwords, even with swaps",!k.has("common")],
+   ["No predictable patterns","Avoids aaa, 1234, qwerty and years",!(k.has("repeat")||k.has("seq")||k.has("kb")||k.has("year"))],
+   ["Not reused","Not found in your saved history",!reused]];
+  $("list").innerHTML="";
+  items.forEach(([t,s,ok])=>{const d=document.createElement("div");d.className="chk"+(p&&ok?" y":"");
+    d.innerHTML='<span class="d">✓</span><div></div>';const x=d.lastChild;x.textContent=t;const sm=document.createElement("small");sm.textContent=s;x.append(sm);$("list").append(d)})}
+function bars(r){const b=$("bars");b.innerHTML="";const mx=Math.max(1,r.len);
+  [["Uppercase",r.n.up],["Lowercase",r.n.lo],["Numbers",r.n.dg],["Special",r.n.sy]].forEach(([n,v])=>{
+    const d=document.createElement("div");d.className="br";const a=document.createElement("span");a.textContent=n;const m=document.createElement("div");const i=document.createElement("i");i.style.width=(v/mx*100)+"%";m.append(i);const c=document.createElement("span");c.textContent=v;d.append(a,m,c);b.append(d)})}
+let tok=0;
+async function update(regen){
+  const p=$("pw").value,t=++tok;
+  const segs=document.querySelectorAll(".segs i");
+  if(!p){segs.forEach(s=>s.style.background="");$("lvl").textContent="Enter a password to begin";$("lvl").style.color="";$("stats").textContent="";$("xray").textContent="—";
+    checklist(analyze(""),"",false);["sLen","sEnt","sPool","sUni"].forEach(i=>$(i).textContent="–");$("bars").innerHTML="";
+    $("crack").innerHTML='<tr><td class="mu">—</td><td></td></tr>';$("alts").className="mu sm";$("alts").textContent="Enter a password to get suggestions.";return}
+  const r=analyze(p),[l,c]=LV[r.level];
+  segs.forEach((s,i)=>s.style.background=i<=r.level?c:"");
+  $("lvl").textContent=l;$("lvl").style.color=c;$("stats").textContent=r.types+"/4 character types · "+Math.round(r.ent)+" bits of entropy";
+  $("xray").className="";$("xray").innerHTML="";[...p].forEach((ch,i)=>{const s=document.createElement("span");s.className=r.weak.has(i)?"w":"g";s.textContent=ch;$("xray").append(s)});
+  $("sLen").textContent=r.len;$("sEnt").textContent=Math.round(r.ent);$("sPool").textContent=r.pool;$("sUni").textContent=new Set(p).size;bars(r);
+  $("crack").innerHTML="";r.crack.forEach(([k,v])=>{const tr=document.createElement("tr");const a=document.createElement("td");a.textContent=k;const b=document.createElement("td");b.textContent=fmt(v);tr.append(a,b);$("crack").append(tr)});
+  checklist(r,p,false);
+  if(regen||!$("alts").querySelector("code")){if(r.level<4)renderAlts(p);else{$("alts").className="mu sm";$("alts").textContent="Already very strong. No upgrade needed."}}
+  try{const u=await used(p);if(t===tok&&u)checklist(r,p,true)}catch(e){}}
+function history(){const l=getH();$("hc").textContent=l.length+" password(s) saved";const b=$("hlist");b.innerHTML="";
+  if(!l.length){b.innerHTML='<p class="mu">Nothing saved yet. Use Save on the Analyzer tab.</p>';return}
+  l.slice().reverse().forEach(e=>{const d=document.createElement("div");d.className="hrow";const a=document.createElement("span");a.textContent=new Date(e.t).toLocaleString();const c=document.createElement("code");c.textContent="PBKDF2-SHA256 · "+e.h.slice(0,14)+"…";d.append(a,c);b.append(d)})}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id===b.dataset.v));if(b.dataset.v==="hi")history()});
+$("pw").addEventListener("input",()=>{$("alts").innerHTML="";update(true)});
+$("tg").onclick=()=>{const i=$("pw"),s=i.type==="password";i.type=s?"text":"password";$("tg").textContent=s?"Hide":"Show"};
+$("gen").onclick=()=>{$("pw").value=suggest("")[1][1];$("pw").type="text";$("tg").textContent="Hide";update(true)};
+$("cp").onclick=()=>{const v=$("pw").value;if(!v)return;try{navigator.clipboard.writeText(v);$("cp").textContent="Copied"}catch(e){$("cp").textContent="Ctrl+C"}setTimeout(()=>$("cp").textContent="Copy",1200)};
+$("atk").onclick=()=>{const p=$("pw").value;if(!p)return say("Type a password first.");const t0=performance.now();const r=dictAttack(p),ms=Math.round(performance.now()-t0);
+  r?say("💥 CRACKED after "+r[0].toLocaleString()+" guesses ("+ms+" ms). Attackers try these first!","var(--bad)"):say("🛡 Survived the dictionary attack (about 300,000 mutated guesses). A real attacker would need brute force.","var(--ok)")};
+$("save").onclick=async()=>{const p=$("pw").value;if(!p)return say("Type a password first.");try{if(await used(p))return say("Already in history.");
+  const salt=crypto.getRandomValues(new Uint8Array(16));const h=getH();h.push({s:hex(salt),h:await kdf(p,salt),t:new Date().toISOString()});setH(h);say("Saved as a salted hash. You can’t reuse it later.","var(--ok)");update(false)}catch(e){say("History needs a secure (https) page.")}};
+$("clr").onclick=()=>{if(confirm("Delete all saved password hashes?")){setH([]);history()}};
+update(false);
+</script></body></html>
