@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrackSense – Password Strength Analyzer</title>
+
+  <style>
+    /* ==========================================================
+       1. COLOURS (black + gold theme). Change colours only here.
+       ========================================================== */
+    :root {
+      --bg:    #0a0a0a;   /* page background        */
+      --bg2:   #141414;   /* input / nav background */
+      --card:  #161616;   /* card background        */
+      --card2: #1f1f1f;   /* small boxes inside cards */
+      --tx:    #f6f1e3;   /* main text              */
+      --mu:    #a09886;   /* muted (grey) text      */
+      --bd:    #2e2a20;   /* borders                */
+      --ac:    #d4af37;   /* gold accent            */
+      --ac2:   #f5d77a;   /* light gold accent      */
+      --onac:  #111111;   /* text placed on gold    */
+      --bad:   #f87171;   /* weak / error (red)     */
+      --ok:    #86efac;   /* good (green)           */
+      --glow:  rgba(212, 175, 55, .16);
+      color-scheme: dark;
+    }
+
+    /* ==========================================================
+       2. BASE STYLES
+       ========================================================== */
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(900px 500px at 50% -120px, var(--glow), transparent), var(--bg);
+      color: var(--tx);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+    }
+
+    .wrap   { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .mu     { color: var(--mu); }
+    .sm     { font-size: .85rem; }
+
+    h2 {
+      font-size: .75rem;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--mu);
+      margin: 0 0 10px;
+    }
+
+    /* ==========================================================
+       3. HEADER AND TABS
+       ========================================================== */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 14px;
+    }
+
+    .logo   { font-weight: 800; font-size: 1.1rem; }
+    .logo b { color: var(--ac); }
+
+    nav {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg2);
+      border-radius: 999px;
+    }
+
+    nav button {
+      border: 0;
+      background: none;
+      color: var(--mu);
+      padding: 7px 16px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: .9rem;
+      cursor: pointer;
+    }
+
+    nav button.on {                      /* the selected tab */
+      background: var(--ac);
+      color: var(--onac);
+      font-weight: 700;
+    }
+
+    /* Only the selected tab's section is visible */
+    .view    { display: none; }
+    .view.on { display: block; }
+
+    /* ==========================================================
+       4. TITLE AREA
+       ========================================================== */
+    .hero { text-align: center; padding: 26px 8px 18px; }
+    .hero h1 { font-size: clamp(1.7rem, 5vw, 2.6rem); margin: 0; line-height: 1.15; }
+    .hero p  { color: var(--mu); margin: 8px 0 0; }
+
+    .hero h1 span {                      /* gold gradient text */
+      background: linear-gradient(90deg, var(--ac), var(--ac2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* ==========================================================
+       5. LAYOUT AND CARDS
+       ========================================================== */
+    .grid {                              /* two columns, one column on phones */
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ==========================================================
+       6. INPUT AND BUTTONS
+       ========================================================== */
+    input {
+      flex: 1;
+      min-width: 0;
+      font-size: 1.05rem;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      color: var(--tx);
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+    }
+    input:focus { outline: 2px solid var(--ac); }
+
+    button.b {
+      font: inherit;
+      font-size: .9rem;
+      padding: 9px 13px;
+      border-radius: 10px;
+      border: 1px solid var(--bd);
+      background: var(--card2);
+      color: var(--tx);
+      cursor: pointer;
+    }
+    button.b:hover { border-color: var(--ac); }
+
+    button.p {                           /* main (gold) button */
+      background: var(--ac);
+      color: var(--onac);
+      border-color: var(--ac);
+      font-weight: 700;
+    }
+
+    /* ==========================================================
+       7. STRENGTH BAR, X-RAY AND CHECKLIST
+       ========================================================== */
+    .segs {                              /* 5-piece strength bar */
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      margin: 14px 0 8px;
+    }
+    .segs i { height: 7px; border-radius: 4px; background: var(--bd); transition: background .2s; }
+
+    .lvl { font-weight: 800; font-size: 1.25rem; }
+
+    #xray {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 1.35rem;
+      overflow-wrap: anywhere;
+      min-height: 2rem;
+    }
+    .w { color: var(--bad); text-decoration: underline wavy; font-weight: 700; }  /* weak character */
+    .g { color: var(--ok); }                                                      /* good character */
+
+    .chk {                               /* one checklist row */
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      background: var(--card2);
+      border-radius: 10px;
+      font-size: .92rem;
+    }
+    .chk small { display: block; color: var(--mu); font-size: .75rem; }
+    .chk .d {                            /* the round tick */
+      width: 20px;
+      height: 20px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--bd);
+      border-radius: 50%;
+      font-size: .7rem;
+      color: transparent;
+    }
+    .chk.y .d { background: var(--ok); border-color: var(--ok); color: var(--onac); }  /* passed */
+
+    /* ==========================================================
+       8. DETAILS, TABLES, SUGGESTIONS, HISTORY, ABOUT
+       ========================================================== */
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .st    { background: var(--card2); border-radius: 10px; padding: 10px; text-align: center; }
+    .st b  { display: block; font-size: 1.3rem; }
+    .st small { color: var(--mu); font-size: .7rem; letter-spacing: .07em; }
+
+    .br { display: grid; grid-template-columns: 80px 1fr 28px; gap: 8px; align-items: center; font-size: .85rem; margin: 4px 0; }
+    .br div { height: 6px; background: var(--bd); border-radius: 4px; overflow: hidden; }
+    .br i   { display: block; height: 100%; width: 0; background: var(--ac); transition: width .2s; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    td    { padding: 7px 0; border-bottom: 1px solid var(--bd); }
+    td:last-child { text-align: right; font-weight: 700; }
+
+    #msg { font-weight: 600; margin-top: 10px; min-height: 1.5rem; }
+
+    .alt { display: flex; gap: 8px; align-items: center; margin: 4px 0 10px; }
+    .alt code {
+      flex: 1;
+      overflow-wrap: anywhere;
+      padding: 8px;
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      border-radius: 8px;
+    }
+
+    .hrow { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--bd); font-size: .9rem; }
+    .hrow code { color: var(--ac); }
+
+    .about h3 { margin: 16px 0 4px; color: var(--ac); font-size: 1rem; }
+    .about p  { margin: 0; color: var(--mu); }
+
+    footer { text-align: center; color: var(--mu); font-size: .8rem; padding: 18px 0 30px; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <!-- ===== HEADER: logo + tabs ===== -->
+    <header>
+      <div class="logo">🔍 Crack<b>Sense</b></div>
+      <nav>
+        <button class="on" data-v="an">Analyzer</button>
+        <button data-v="hi">History</button>
+        <button data-v="ab">About</button>
+      </nav>
+    </header>
+
+    <!-- ===== TAB 1: ANALYZER ===== -->
+    <section id="an" class="view on">
+
+      <div class="hero">
+        <h1>Password <span>Strength Analyzer</span></h1>
+        <p>See exactly which parts of your password an attacker would guess first.</p>
+      </div>
+
+      <div class="grid">
+
+        <!-- Left card: input, buttons, strength, x-ray -->
+        <div class="card">
+          <h2>Enter password</h2>
+
+          <div class="row">
+            <input id="pw" type="password" placeholder="Type your password here…" autocomplete="off" spellcheck="false">
+            <button class="b" id="tg">Show</button>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button class="b p" id="gen">✨ Generate strong</button>
+            <button class="b" id="cp">Copy</button>
+            <button class="b" id="save">💾 Save</button>
+          </div>
+
+          <div class="segs"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="lvl" id="lvl">Enter a password to begin</div>
+          <div class="mu sm" id="stats"></div>
+
+          <h2 style="margin-top:16px">X-ray view (red = predictable)</h2>
+          <div id="xray" class="mu">—</div>
+        </div>
+
+        <!-- Right card: checklist -->
+        <div class="card">
+          <h2>Security checklist</h2>
+          <div id="list"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+
+        <!-- Details card -->
+        <div class="card">
+          <h2>Detailed analysis</h2>
+          <div class="stats">
+            <div class="st"><b id="sLen">–</b><small>CHARACTERS</small></div>
+            <div class="st"><b id="sEnt">–</b><small>ENTROPY (BITS)</small></div>
+            <div class="st"><b id="sPool">–</b><small>CHARSET SIZE</small></div>
+            <div class="st"><b id="sUni">–</b><small>UNIQUE CHARS</small></div>
+          </div>
+          <div id="bars"></div>
+
+          <h2 style="margin-top:14px">Time to crack</h2>
+          <table id="crack"><tr><td class="mu">—</td><td></td></tr></table>
+        </div>
+
+        <!-- Attack simulator + suggestions -->
+        <div class="card">
+          <h2>Attack simulator</h2>
+          <p class="mu sm" style="margin-top:0">
+            Runs a real dictionary attack: common words plus capitals, leetspeak, digits and years.
+          </p>
+          <button class="b p" id="atk">⚔ Simulate attack</button>
+          <div id="msg" class="mu"></div>
+
+          <h2 style="margin-top:16px">Stronger alternatives</h2>
+          <div id="alts" class="mu sm">Enter a password to get suggestions.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB 2: HISTORY ===== -->
+    <section id="hi" class="view">
+      <div class="hero">
+        <h1><span>History</span></h1>
+        <p>Saved passwords are stored only as salted PBKDF2 hashes in this browser.</p>
+      </div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <div id="hc" class="mu"></div>
+          <button class="b" id="clr">Clear history</button>
+        </div>
+        <div id="hlist"></div>
+      </div>
+    </section>
+
+    <!-- ===== TAB 3: ABOUT ===== -->
+    <section id="ab" class="view">
+      <div class="hero"><h1>About <span>CrackSense</span></h1></div>
+      <div class="card about">
+        <h3>Entropy</h3>
+        <p>A measure of unpredictability in bits: characters × log₂(pool size). Every extra bit doubles the guesses. CrackSense counts predictable characters as almost zero, because attackers try them first.</p>
+
+        <h3>Brute force vs dictionary attack</h3>
+        <p>Brute force tries every combination, so length wins. A dictionary attack tries real words with common tweaks, so “P@ssw0rd2024” falls almost instantly even though it looks complex.</p>
+
+        <h3>X-ray view</h3>
+        <p>Highlights common words, sequences (abcd, 4321), keyboard walks (qwerty), repeats and years in red so you can see what to change.</p>
+
+        <h3>Hashing and salting</h3>
+        <p>History never stores your password. A random 16-byte salt is added, then PBKDF2-HMAC-SHA256 runs 100,000 times. Hashing is one-way, salt defeats rainbow tables, and the iterations make each guess slow.</p>
+
+        <h3>Privacy</h3>
+        <p>Everything runs locally in your browser. Nothing is sent to a server.</p>
+      </div>
+    </section>
+
+    <footer>CrackSense · Password Strength Analyzer</footer>
+  </div>
+
+  <script>
+    /* ==========================================================
+       1. DATA: word lists and lookup tables
+       ========================================================== */
+    const COMMON = [
+      "password", "123456", "12345678", "qwerty", "abc123", "letmein", "admin", "welcome",
+      "iloveyou", "monkey", "dragon", "football", "login", "princess", "sunshine", "master",
+      "hello", "freedom", "whatever", "trustno1", "passw0rd", "111111", "123123", "000000",
+      "qwertyuiop", "password1", "admin123", "india", "chennai", "cricket", "superman",
+      "batman", "shadow", "michael", "computer", "college", "student", "vijay", "dhoni"
+    ];
+
+    // Words used to build suggested passphrases
+    const WORDS = [
+      "maple", "orbit", "tiger", "cobalt", "river", "lantern", "pixel", "falcon", "mango", "harbor",
+      "quartz", "velvet", "comet", "bamboo", "anchor", "ember", "glacier", "jasmine", "nimbus", "saffron",
+      "thunder", "violet", "walnut", "zephyr", "cipher", "meadow", "rocket", "coral", "prism", "summit"
+    ];
+
+    // Keyboard patterns attackers try
+    const KEYBOARD = [
+      "qwertyuiop", "qwerty", "asdfgh", "asdf", "zxcvbn", "zxcv",
+      "qaz", "wsx", "1qaz", "2wsx", "poiuy", "hjkl"
+    ];
+
+    const SYMBOLS = "!@#$%^&*-_+=?";
+
+    // Leetspeak: symbol -> real letter (used to detect "p@ssw0rd")
+    const LEET = { "@": "a", "4": "a", "3": "e", "1": "i", "!": "i", "|": "i", "0": "o", "$": "s", "5": "s", "7": "t" };
+
+    // Letter -> symbol (used by the attack simulator and suggestions)
+    const TO_LEET = { a: "@", e: "3", o: "0", s: "$", i: "!" };
+
+    // Strength levels: name + colour
+    const LEVELS = [
+      ["Very weak",   "#ef4444"],
+      ["Weak",        "#f97316"],
+      ["Fair",        "#eab308"],
+      ["Strong",      "#22c55e"],
+      ["Very strong", "#10b981"]
+    ];
+
+    /* ==========================================================
+       2. SMALL HELPER FUNCTIONS
+       ========================================================== */
+    const $ = id => document.getElementById(id);                 // shortcut for getElementById
+
+    // Secure random number from 0 to n-1
+    function randomInt(n) {
+      const a = new Uint32Array(1);
+      crypto.getRandomValues(a);
+      return a[0] % n;
+    }
+
+    // Random item from a string or array
+    function pick(list) {
+      return list[randomInt(list.length)];
+    }
+
+    // "maple" -> "Maple"
+    function capitalize(word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+
+    // Undo leetspeak: "P@ssw0rd" -> "password"
+    function normalize(pw) {
+      return [...pw.toLowerCase()].map(c => LEET[c] || c).join("");
+    }
+
+    // Turn seconds into friendly text ("3 days", "instantly")
+    function formatTime(seconds) {
+      if (seconds < 1) return "instantly";
+      if (seconds > 31557600 * 1e9) return "billions of years+";
+
+      const units = [["year", 31557600], ["day", 86400], ["hour", 3600], ["minute", 60], ["second", 1]];
+      for (const [name, size] of units) {
+        if (seconds >= size) {
+          const n = Math.floor(seconds / size);
+          return n.toLocaleString() + " " + name + (n > 1 ? "s" : "");
+        }
+      }
+      return "instantly";
+    }
+
+    /* ==========================================================
+       3. ANALYSIS: find weak parts and calculate strength
+       ========================================================== */
+
+    // Returns a list of [start, end, type] for every predictable part
+    function findWeakParts(pw) {
+      const parts = [];
+      const lower = pw.toLowerCase();
+      const clean = normalize(pw);
+
+      // a) common words (even with @ / 0 / $ swaps)
+      COMMON.filter(w => w.length >= 4).forEach(word => {
+        let i = clean.indexOf(word);
+        while (i >= 0) {
+          parts.push([i, i + word.length, "common"]);
+          i = clean.indexOf(word, i + 1);
+        }
+      });
+
+      // b) repeated characters like "aaa"
+      for (const m of pw.matchAll(/(.)\1{2,}/g)) {
+        parts.push([m.index, m.index + m[0].length, "repeat"]);
+      }
+
+      // c) sequences like "abcd" or "4321" (4 or more in a row)
+      let i = 0;
+      while (i < lower.length - 3) {
+        const step = lower.charCodeAt(i + 1) - lower.charCodeAt(i);
+        let j = i + 1;
+        if (step === 1 || step === -1) {
+          while (j < lower.length && lower.charCodeAt(j) - lower.charCodeAt(j - 1) === step) j++;
+          if (j - i >= 4) {
+            parts.push([i, j, "seq"]);
+            i = j;
+            continue;
+          }
+        }
+        i++;
+      }
+
+      // d) keyboard patterns like "qwerty"
+      KEYBOARD.forEach(pattern => {
+        let k = lower.indexOf(pattern);
+        while (k >= 0) {
+          parts.push([k, k + pattern.length, "kb"]);
+          k = lower.indexOf(pattern, k + 1);
+        }
+      });
+
+      // e) years like 1999 or 2024
+      for (const m of pw.matchAll(/(19|20)\d\d/g)) {
+        parts.push([m.index, m.index + 4, "year"]);
+      }
+
+      return parts;
+    }
+
+    // Full analysis of a password
+    function analyze(pw) {
+      const r = {
+        len: pw.length,
+        lo: /[a-z]/.test(pw),
+        up: /[A-Z]/.test(pw),
+        dg: /\d/.test(pw),
+        sy: /[^A-Za-z0-9]/.test(pw)
+      };
+
+      r.types = [r.lo, r.up, r.dg, r.sy].filter(Boolean).length;               // how many character types
+      r.pool  = 26 * r.lo + 26 * r.up + 10 * r.dg + 33 * r.sy;                  // size of character pool
+
+      // Mark every weak character position
+      const parts = findWeakParts(pw);
+      const weak = new Set();
+      parts.forEach(([start, end]) => {
+        for (let i = start; i < end; i++) weak.add(i);
+      });
+      r.weak  = weak;
+      r.kinds = new Set(parts.map(p => p[2]));
+
+      // ENTROPY: normal characters give log2(pool) bits, weak ones only 1.5 bits
+      let entropy = r.pool ? (pw.length - weak.size) * Math.log2(r.pool) + weak.size * 1.5 : 0;
+      if (COMMON.includes(normalize(pw))) entropy = Math.min(entropy, 5);       // a pure common password is nearly worthless
+      r.ent = entropy;
+
+      // Level 0-4 from entropy
+      r.level = entropy < 28 ? 0 : entropy < 36 ? 1 : entropy < 60 ? 2 : entropy < 80 ? 3 : 4;
+
+      // Crack time = (2^entropy / 2) guesses divided by attacker speed
+      const guesses = Math.pow(2, entropy) / 2;
+      r.crack = [
+        ["Online (100 guesses/sec)",       guesses / 1e2],
+        ["Offline PC (10 billion/sec)",    guesses / 1e10],
+        ["GPU cluster (1 trillion/sec)",   guesses / 1e12]
+      ];
+
+      // Counts per character type (for the small bars)
+      r.n = {
+        up: (pw.match(/[A-Z]/g) || []).length,
+        lo: (pw.match(/[a-z]/g) || []).length,
+        dg: (pw.match(/\d/g) || []).length,
+        sy: (pw.match(/[^A-Za-z0-9]/g) || []).length
+      };
+      return r;
+    }
+
+    /* ==========================================================
+       4. ATTACK SIMULATOR (dictionary attack with mutations)
+       ========================================================== */
+    function dictionaryAttack(target) {
+      // Endings attackers add: !, 123, 0-999, years 1950-2030
+      const endings = ["", "!", "@123", "123", "1234", "@", "#", "."];
+      for (let i = 0; i < 1000; i++) endings.push(String(i));
+      for (let y = 1950; y <= 2030; y++) endings.push(String(y));
+
+      let attempts = 0;
+      for (const word of COMMON) {
+        const full  = [...word].map(c => TO_LEET[c] || c).join("");                                        // p@$$w0rd
+        const light = [...word].map(c => ({ a: "@", o: "0", e: "3" }[c] || c)).join("");                   // p@ssw0rd
+
+        const versions = new Set([word, capitalize(word), word.toUpperCase(), full, capitalize(full), light, capitalize(light)]);
+        for (const base of versions) {
+          for (const end of endings) {
+            attempts++;
+            if (base + end === target) return [attempts, base + end];   // cracked
+          }
+        }
+      }
+      return null;                                                     // survived
+    }
+
+    /* ==========================================================
+       5. HISTORY: salted PBKDF2 hashes saved in the browser
+       ========================================================== */
+    const toHex   = bytes => [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2, "0")).join("");
+    const fromHex = hex   => new Uint8Array(hex.match(/../g).map(x => parseInt(x, 16)));
+
+    // Hash a password with a salt (PBKDF2-HMAC-SHA256, 100,000 rounds)
+    async function hashPassword(pw, salt) {
+      const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, key, 256);
+      return toHex(bits);
+    }
+
+    function loadHistory() {
+      try { return JSON.parse(localStorage.getItem("vl_hist") || "[]"); }
+      catch (e) { return []; }
+    }
+
+    function saveHistory(list) {
+      try { localStorage.setItem("vl_hist", JSON.stringify(list)); }
+      catch (e) { /* storage not available */ }
+    }
+
+    // Was this password saved before? (hash it with each stored salt and compare)
+    async function wasUsed(pw) {
+      for (const entry of loadHistory()) {
+        if (await hashPassword(pw, fromHex(entry.s)) === entry.h) return true;
+      }
+      return false;
+    }
+
+    /* ==========================================================
+       6. SUGGESTIONS: three stronger alternatives
+       ========================================================== */
+    function makeSuggestions(pw) {
+      const weak = analyze(pw).weak;
+
+      // Keep up to 5 good letters from the user's password (or a random word)
+      const kept = [...pw].filter((c, i) => !weak.has(i) && /[a-z]/i.test(c)).slice(0, 5).join("").toLowerCase() || pick(WORDS);
+      const upgraded = capitalize([...kept].map(c => (randomInt(2) && TO_LEET[c]) ? TO_LEET[c] : c).join(""));
+
+      const allChars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789" + SYMBOLS;
+
+      const makers = [
+        ["Your password, upgraded",
+          () => upgraded + pick(SYMBOLS) + capitalize(pick(WORDS)) + (randomInt(90) + 10) + pick(SYMBOLS)],
+        ["Easy-to-remember passphrase",
+          () => [0, 1, 2, 3].map(() => capitalize(pick(WORDS))).join("-") + (randomInt(90) + 10) + pick(SYMBOLS)],
+        ["Fully random (16 chars)",
+          () => Array.from({ length: 16 }, () => pick(allChars)).join("")]
+      ];
+
+      // Try up to 20 times until the suggestion is rated Strong or better
+      return makers.map(([title, make]) => {
+        let candidate;
+        for (let i = 0; i < 20; i++) {
+          candidate = make();
+          if (analyze(candidate).level >= 3) break;
+        }
+        return [title, candidate];
+      });
+    }
+
+    /* ==========================================================
+       7. SCREEN UPDATES (drawing results on the page)
+       ========================================================== */
+    function showMessage(text, color) {
+      const box = $("msg");
+      box.textContent = text;
+      box.style.color = color || "";
+    }
+
+    // Draw the suggestion boxes
+    function showSuggestions(pw) {
+      const box = $("alts");
+      box.className = "";
+      box.innerHTML = "";
+
+      makeSuggestions(pw).forEach(([title, text]) => {
+        const wrapper = document.createElement("div");
+
+        const label = document.createElement("div");
+        label.className = "mu sm";
+        label.textContent = title;
+
+        const line = document.createElement("div");
+        line.className = "alt";
+
+        const code = document.createElement("code");
+        code.textContent = text;
+
+        const useBtn = document.createElement("button");
+        useBtn.className = "b";
+        useBtn.textContent = "Use";
+        useBtn.onclick = () => {
+          $("pw").value = text;
+          $("pw").type = "text";
+          $("tg").textContent = "Hide";
+          update(true);
+        };
+
+        line.append(code, useBtn);
+        wrapper.append(label, line);
+        box.append(wrapper);
+      });
+    }
+
+    // Draw the checklist (ticks turn green when passed)
+    function showChecklist(r, pw, reused) {
+      const k = r.kinds;
+      const items = [
+        ["Minimum length",         "At least 8 characters",                   r.len >= 8],
+        ["Great length",           "14 or more characters",                   r.len >= 14],
+        ["Uppercase letters",      "Contains A–Z",                            r.up],
+        ["Lowercase letters",      "Contains a–z",                            r.lo],
+        ["Numbers",                "Contains 0–9",                            r.dg],
+        ["Special characters",     "Contains !@#$%^&* etc.",                  r.sy],
+        ["Not a common password",  "Avoids known passwords, even with swaps", !k.has("common")],
+        ["No predictable patterns","Avoids aaa, 1234, qwerty and years",      !(k.has("repeat") || k.has("seq") || k.has("kb") || k.has("year"))],
+        ["Not reused",             "Not found in your saved history",         !reused]
+      ];
+
+      $("list").innerHTML = "";
+      items.forEach(([title, hint, passed]) => {
+        const row = document.createElement("div");
+        row.className = "chk" + (pw && passed ? " y" : "");
+        row.innerHTML = '<span class="d">✓</span><div></div>';
+
+        const text = row.lastChild;
+        text.textContent = title;
+        const small = document.createElement("small");
+        small.textContent = hint;
+        text.append(small);
+
+        $("list").append(row);
+      });
+    }
+
+    // Draw the four small bars (uppercase, lowercase, numbers, special)
+    function showBars(r) {
+      const box = $("bars");
+      box.innerHTML = "";
+      const max = Math.max(1, r.len);
+
+      [["Uppercase", r.n.up], ["Lowercase", r.n.lo], ["Numbers", r.n.dg], ["Special", r.n.sy]].forEach(([name, count]) => {
+        const row = document.createElement("div");
+        row.className = "br";
+
+        const label = document.createElement("span");
+        label.textContent = name;
+
+        const track = document.createElement("div");
+        const fill = document.createElement("i");
+        fill.style.width = (count / max * 100) + "%";
+        track.append(fill);
+
+        const number = document.createElement("span");
+        number.textContent = count;
+
+        row.append(label, track, number);
+        box.append(row);
+      });
+    }
+
+    // Everything that changes when the password changes
+    let latestRun = 0;   // used to ignore outdated async checks
+
+    async function update(regenerateSuggestions) {
+      const pw = $("pw").value;
+      const run = ++latestRun;
+      const segments = document.querySelectorAll(".segs i");
+
+      // --- Empty password: reset the screen ---
+      if (!pw) {
+        segments.forEach(s => s.style.background = "");
+        $("lvl").textContent = "Enter a password to begin";
+        $("lvl").style.color = "";
+        $("stats").textContent = "";
+        $("xray").textContent = "—";
+        showChecklist(analyze(""), "", false);
+        ["sLen", "sEnt", "sPool", "sUni"].forEach(id => $(id).textContent = "–");
+        $("bars").innerHTML = "";
+        $("crack").innerHTML = '<tr><td class="mu">—</td><td></td></tr>';
+        $("alts").className = "mu sm";
+        $("alts").textContent = "Enter a password to get suggestions.";
+        return;
+      }
+
+      const r = analyze(pw);
+      const [levelName, levelColor] = LEVELS[r.level];
+
+      // Strength bar and label
+      segments.forEach((s, i) => s.style.background = i <= r.level ? levelColor : "");
+      $("lvl").textContent = levelName;
+      $("lvl").style.color = levelColor;
+      $("stats").textContent = r.types + "/4 character types · " + Math.round(r.ent) + " bits of entropy";
+
+      // X-ray view: red = weak character, green = fine
+      $("xray").className = "";
+      $("xray").innerHTML = "";
+      [...pw].forEach((ch, i) => {
+        const span = document.createElement("span");
+        span.className = r.weak.has(i) ? "w" : "g";
+        span.textContent = ch;
+        $("xray").append(span);
+      });
+
+      // Detail numbers
+      $("sLen").textContent  = r.len;
+      $("sEnt").textContent  = Math.round(r.ent);
+      $("sPool").textContent = r.pool;
+      $("sUni").textContent  = new Set(pw).size;
+      showBars(r);
+
+      // Crack-time table
+      $("crack").innerHTML = "";
+      r.crack.forEach(([label, seconds]) => {
+        const row = document.createElement("tr");
+        const a = document.createElement("td");
+        a.textContent = label;
+        const b = document.createElement("td");
+        b.textContent = formatTime(seconds);
+        row.append(a, b);
+        $("crack").append(row);
+      });
+
+      showChecklist(r, pw, false);
+
+      // Suggestions
+      if (regenerateSuggestions || !$("alts").querySelector("code")) {
+        if (r.level < 4) {
+          showSuggestions(pw);
+        } else {
+          $("alts").className = "mu sm";
+          $("alts").textContent = "Already very strong. No upgrade needed.";
+        }
+      }
+
+      // Check the saved history (takes a moment because hashing is slow on purpose)
+      try {
+        const reused = await wasUsed(pw);
+        if (run === latestRun && reused) showChecklist(r, pw, true);
+      } catch (e) { /* ignore */ }
+    }
+
+    // Draw the History tab
+    function showHistory() {
+      const list = loadHistory();
+      $("hc").textContent = list.length + " password(s) saved";
+
+      const box = $("hlist");
+      box.innerHTML = "";
+      if (!list.length) {
+        box.innerHTML = '<p class="mu">Nothing saved yet. Use Save on the Analyzer tab.</p>';
+        return;
+      }
+
+      list.slice().reverse().forEach(entry => {
+        const row = document.createElement("div");
+        row.className = "hrow";
+
+        const date = document.createElement("span");
+        date.textContent = new Date(entry.t).toLocaleString();
+
+        const hash = document.createElement("code");
+        hash.textContent = "PBKDF2-SHA256 · " + entry.h.slice(0, 14) + "…";
+
+        row.append(date, hash);
+        box.append(row);
+      });
+    }
+
+    /* ==========================================================
+       8. BUTTONS AND EVENTS
+       ========================================================== */
+
+    // Tabs: Analyzer / History / About
+    document.querySelectorAll("nav button").forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b === tab));
+        document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === tab.dataset.v));
+        if (tab.dataset.v === "hi") showHistory();
+      };
+    });
+
+    // Typing in the password box
+    $("pw").addEventListener("input", () => {
+      $("alts").innerHTML = "";
+      update(true);
+    });
+
+    // Show / Hide password
+    $("tg").onclick = () => {
+      const input = $("pw");
+      const hidden = input.type === "password";
+      input.type = hidden ? "text" : "password";
+      $("tg").textContent = hidden ? "Hide" : "Show";
+    };
+
+    // Generate strong (uses the passphrase suggestion)
+    $("gen").onclick = () => {
+      $("pw").value = makeSuggestions("")[1][1];
+      $("pw").type = "text";
+      $("tg").textContent = "Hide";
+      update(true);
+    };
+
+    // Copy password
+    $("cp").onclick = () => {
+      const value = $("pw").value;
+      if (!value) return;
+      try {
+        navigator.clipboard.writeText(value);
+        $("cp").textContent = "Copied";
+      } catch (e) {
+        $("cp").textContent = "Ctrl+C";
+      }
+      setTimeout(() => $("cp").textContent = "Copy", 1200);
+    };
+
+    // Simulate attack
+    $("atk").onclick = () => {
+      const pw = $("pw").value;
+      if (!pw) return showMessage("Type a password first.");
+
+      const start = performance.now();
+      const result = dictionaryAttack(pw);
+      const ms = Math.round(performance.now() - start);
+
+      if (result) {
+        showMessage("💥 CRACKED after " + result[0].toLocaleString() + " guesses (" + ms + " ms). Attackers try these first!", "var(--bad)");
+      } else {
+        showMessage("🛡 Survived the dictionary attack (about 300,000 mutated guesses). A real attacker would need brute force.", "var(--ok)");
+      }
+    };
+
+    // Save to history (random salt + PBKDF2 hash, never the password itself)
+    $("save").onclick = async () => {
+      const pw = $("pw").value;
+      if (!pw) return showMessage("Type a password first.");
+
+      try {
+        if (await wasUsed(pw)) return showMessage("Already in history.");
+
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const list = loadHistory();
+        list.push({ s: toHex(salt), h: await hashPassword(pw, salt), t: new Date().toISOString() });
+        saveHistory(list);
+
+        showMessage("Saved as a salted hash. You can’t reuse it later.", "var(--ok)");
+        update(false);
+      } catch (e) {
+        showMessage("History needs a secure (https) page.");
+      }
+    };
+
+    // Clear history
+    $("clr").onclick = () => {
+      if (confirm("Delete all saved password hashes?")) {
+        saveHistory([]);
+        showHistory();
+      }
+    };
+
+    // Draw the empty screen when the page first loads
+    update(false);
+  </script>
+</body>
+</html>
